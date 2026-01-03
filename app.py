@@ -4,7 +4,7 @@ import pickle
 
 # Load trained model
 with open("loan_default_model.pkl", "rb") as file:
-    model = pickle.load(file)
+    load_model = pickle.load(file)
 
 st.title("Loan Default Prediction App")
 st.write("Enter applicant details:")
@@ -24,9 +24,10 @@ if st.button("Predict"):
                              months_employed, num_credit_lines,
                              interest_rate, loan_term, dti_ratio]])
 
-    prediction = model.predict(input_data)[0]
+    prediction = load_model.predict(input_data)[0]
 
     if prediction == 1:
         st.error("⚠️ High Risk: Loan Default Likely")
     else:
         st.success("✅ Low Risk: Loan Repayment Likely")
+
