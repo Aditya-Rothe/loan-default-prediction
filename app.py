@@ -1,12 +1,12 @@
 import streamlit as st
 import numpy as np
-import joblib
+import pickle
 
 # Load trained model
-model = joblib.load("loan_default_model.pkl")
+with open("loan_default_model.pkl", "rb") as file:
+    model = pickle.load(file)
 
 st.title("Loan Default Prediction App")
-
 st.write("Enter applicant details:")
 
 age = st.number_input("Age", 18, 100)
@@ -23,11 +23,10 @@ if st.button("Predict"):
     input_data = np.array([[age, income, loan_amount, credit_score,
                              months_employed, num_credit_lines,
                              interest_rate, loan_term, dti_ratio]])
-    
+
     prediction = model.predict(input_data)[0]
 
     if prediction == 1:
         st.error("⚠️ High Risk: Loan Default Likely")
     else:
         st.success("✅ Low Risk: Loan Repayment Likely")
-
