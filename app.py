@@ -3,7 +3,7 @@ import numpy as np
 import joblib
 
 # Load trained model
-model = joblib.load("model.pkl")
+model = joblib.load("loan_default_model.pkl")
 
 st.title("Loan Default Prediction App")
 
@@ -30,3 +30,4 @@ if st.button("Predict"):
         st.error("⚠️ High Risk: Loan Default Likely")
     else:
         st.success("✅ Low Risk: Loan Repayment Likely")
+
