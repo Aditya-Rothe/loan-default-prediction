@@ -1,5 +1,4 @@
 import streamlit as st
-import sklearn
 import numpy as np
 import pickle
 
@@ -31,5 +30,6 @@ if st.button("Predict"):
         st.error("⚠️ High Risk: Loan Default Likely")
     else:
         st.success("✅ Low Risk: Loan Repayment Likely")
+
 
 
