@@ -60,8 +60,18 @@ has_cosigner = st.selectbox("Has Co-Signer?", ["Yes", "No"])
 
 if st.button("🔍 Predict Default Risk"):
 
-    # Create RAW input dict (before encoding)
-    input_dict = {
+    # Ordinal Encoding (Education)
+    education_map = {
+        "High School": 0,
+        "Bachelor's": 1,
+        "Master's": 2,
+        "PhD": 3
+    }
+
+    education_encoded = education_map[education]
+
+    # Base numerical features
+    data = {
         "Age": age,
         "Income": income,
         "LoanAmount": loan_amount,
@@ -71,21 +81,50 @@ if st.button("🔍 Predict Default Risk"):
         "InterestRate": interest_rate,
         "LoanTerm": loan_term,
         "DTIRatio": dti_ratio,
-        "Education": education,
-        "EmploymentType": employment_type,
-        "MaritalStatus": marital_status,
-        "HasMortgage": has_mortgage,
-        "HasDependents": has_dependents,
-        "LoanPurpose": loan_purpose,
-        "HasCoSigner": has_cosigner
+        "Education": education_encoded,
     }
 
-    input_df = pd.DataFrame([input_dict])
+    # One-hot encoded categorical features (drop_first=True logic)
+    categorical_columns = [
+        "EmploymentType",
+        "MaritalStatus",
+        "HasMortgage",
+        "HasDependents",
+        "LoanPurpose",
+        "HasCoSigner"
+    ]
 
-    # 🔥 VERY IMPORTANT
-    # Align columns with model
+    for col in categorical_columns:
+        for category in model.feature_names_in_:
+            if category.startswith(col + "_"):
+                data[category] = 0
+
+    # Set selected category = 1
+    if employment_type != "Full-time":
+        data[f"EmploymentType_{employment_type}"] = 1
+
+    if marital_status != "Single":
+        data[f"MaritalStatus_{marital_status}"] = 1
+
+    if has_mortgage == "Yes":
+        data["HasMortgage_Yes"] = 1
+
+    if has_dependents == "Yes":
+        data["HasDependents_Yes"] = 1
+
+    if loan_purpose != "Home":
+        data[f"LoanPurpose_{loan_purpose}"] = 1
+
+    if has_cosigner == "Yes":
+        data["HasCoSigner_Yes"] = 1
+
+    # Create DataFrame
+    input_df = pd.DataFrame([data])
+
+    # Align EXACT feature order
     input_df = input_df.reindex(columns=model.feature_names_in_, fill_value=0)
 
+    # Prediction
     prediction = model.predict(input_df)[0]
     probability = model.predict_proba(input_df)[0][1]
 
