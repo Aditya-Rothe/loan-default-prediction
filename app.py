@@ -58,6 +58,7 @@ has_cosigner = st.selectbox("Has Co-Signer?", ["Yes", "No"])
 # PREDICTION
 # -------------------------
 
+# Prediction
 if st.button("🔍 Predict Default Risk"):
 
     # Ordinal Encoding (Education)
@@ -84,7 +85,7 @@ if st.button("🔍 Predict Default Risk"):
         "Education": education_encoded,
     }
 
-    # One-hot encoded categorical features (drop_first=True logic)
+    # Initialize all one-hot encoded columns to 0
     categorical_columns = [
         "EmploymentType",
         "MaritalStatus",
@@ -94,12 +95,11 @@ if st.button("🔍 Predict Default Risk"):
         "HasCoSigner"
     ]
 
-    for col in categorical_columns:
-        for category in model.feature_names_in_:
-            if category.startswith(col + "_"):
-                data[category] = 0
+    for feature in model.feature_names_in_:
+        if "_" in feature:
+            data[feature] = 0
 
-    # Set selected category = 1
+    # Set selected category = 1 (drop_first=True logic)
     if employment_type != "Full-time":
         data[f"EmploymentType_{employment_type}"] = 1
 
@@ -124,13 +124,26 @@ if st.button("🔍 Predict Default Risk"):
     # Align EXACT feature order
     input_df = input_df.reindex(columns=model.feature_names_in_, fill_value=0)
 
-    # Prediction
-    prediction = model.predict(input_df)[0]
+    # -------------------------
+    # MODEL PREDICTION
+    # -------------------------
     probability = model.predict_proba(input_df)[0][1]
+
+    THRESHOLD = 0.30
+    prediction = 1 if probability >= THRESHOLD else 0
 
     st.divider()
 
     if prediction == 1:
-        st.error(f"⚠️ High Risk of Loan Default\n\nProbability: {probability:.2%}")
+        st.error(
+            f"⚠️ High Risk of Loan Default\n\n"
+            f"Default Probability: {probability:.2%}\n"
+            f"Risk Threshold: {THRESHOLD}"
+        )
     else:
-        st.success(f"✅ Low Risk – Loan Likely Safe\n\nProbability: {probability:.2%}")
+        st.success(
+            f"✅ Low Risk – Loan Likely Safe\n\n"
+            f"Default Probability: {probability:.2%}\n"
+            f"Risk Threshold: {THRESHOLD}"
+        )
+
