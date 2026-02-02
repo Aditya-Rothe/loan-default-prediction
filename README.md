@@ -97,3 +97,11 @@ Ensemble models outperform basic classifiers
 - Machine Learning Model Evaluation
 - Python, Pandas, NumPy, Scikit-learn
 - End-to-End ML Project Workflow
+
+  
+# 🏦 Loan Default Risk Assessment System
+
+🚀 **Live Dashboard:**  
+https://loan-default-prediction-4aivfdbdf3d4swmbe5dhh6.streamlit.app/
+
+📌 **Tech Stack:** Python • Scikit-learn • Streamlit • Gradient Boosting
