@@ -15,14 +15,17 @@ st.set_page_config(
 # -------------------------
 # LOAD MODEL
 # -------------------------
-model = joblib.load("loan_default_model.pkl")
+try:
+    model = joblib.load("loan_default_model.pkl")
+except Exception as e:
+    st.error(f"❌ Failed to load model: {e}")
+    st.stop()
 
 # -------------------------
 # HEADER
 # -------------------------
 st.title("🏦 Loan Default Risk Assessment")
 st.caption("Machine Learning–based credit risk evaluation system")
-
 st.divider()
 
 # -------------------------
@@ -38,7 +41,6 @@ tab1, tab2, tab3 = st.tabs([
 # TAB 1: PREDICTION
 # =========================
 with tab1:
-
     st.subheader("Applicant Information")
 
     age = st.number_input("Age", 18, 100, 30)
@@ -51,27 +53,12 @@ with tab1:
     loan_term = st.number_input("Loan Term (months)", 6, 360, 60)
     dti_ratio = st.number_input("DTI Ratio", 0.0, 1.0, 0.4)
 
-    education = st.selectbox(
-        "Education",
-        ["High School", "Bachelor's", "Master's", "PhD"]
-    )
-
-    employment_type = st.selectbox(
-        "Employment Type",
-        ["Full-time", "Part-time", "Self-employed", "Unemployed"]
-    )
-
-    marital_status = st.selectbox(
-        "Marital Status",
-        ["Single", "Married", "Divorced"]
-    )
-
+    education = st.selectbox("Education", ["High School", "Bachelor's", "Master's", "PhD"])
+    employment_type = st.selectbox("Employment Type", ["Full-time", "Part-time", "Self-employed", "Unemployed"])
+    marital_status = st.selectbox("Marital Status", ["Single", "Married", "Divorced"])
     has_mortgage = st.selectbox("Has Mortgage?", ["Yes", "No"])
     has_dependents = st.selectbox("Has Dependents?", ["Yes", "No"])
-    loan_purpose = st.selectbox(
-        "Loan Purpose",
-        ["Home", "Auto", "Education", "Business", "Other"]
-    )
+    loan_purpose = st.selectbox("Loan Purpose", ["Home", "Auto", "Education", "Business", "Other"])
     has_cosigner = st.selectbox("Has Co-Signer?", ["Yes", "No"])
 
     st.divider()
@@ -79,17 +66,13 @@ with tab1:
     # -------------------------
     # RISK THRESHOLD SLIDER
     # -------------------------
-    THRESHOLD = st.slider(
-        "Risk Threshold (Bank Risk Appetite)",
-        0.10, 0.60, 0.30, 0.05
-    )
+    THRESHOLD = st.slider("Risk Threshold (Bank Risk Appetite)", 0.10, 0.60, 0.30, 0.05)
 
     # -------------------------
     # PREDICTION BUTTON
     # -------------------------
     if st.button("🔍 Assess Loan Risk"):
 
-        # Education encoding
         education_map = {
             "High School": 0,
             "Bachelor's": 1,
@@ -110,35 +93,47 @@ with tab1:
             "Education": education_map[education],
         }
 
-        # Initialize categorical features
+        # Initialize all one-hot features to 0
         for feature in model.feature_names_in_:
-            if "_" in feature:
+            if feature not in data:
                 data[feature] = 0
 
         # Apply one-hot encoding logic
         if employment_type != "Full-time":
-            data[f"EmploymentType_{employment_type}"] = 1
+            key = f"EmploymentType_{employment_type}"
+            if key in model.feature_names_in_:
+                data[key] = 1
 
         if marital_status != "Single":
-            data[f"MaritalStatus_{marital_status}"] = 1
+            key = f"MaritalStatus_{marital_status}"
+            if key in model.feature_names_in_:
+                data[key] = 1
 
         if has_mortgage == "Yes":
-            data["HasMortgage_Yes"] = 1
+            if "HasMortgage_Yes" in model.feature_names_in_:
+                data["HasMortgage_Yes"] = 1
 
         if has_dependents == "Yes":
-            data["HasDependents_Yes"] = 1
+            if "HasDependents_Yes" in model.feature_names_in_:
+                data["HasDependents_Yes"] = 1
 
         if loan_purpose != "Home":
-            data[f"LoanPurpose_{loan_purpose}"] = 1
+            key = f"LoanPurpose_{loan_purpose}"
+            if key in model.feature_names_in_:
+                data[key] = 1
 
         if has_cosigner == "Yes":
-            data["HasCoSigner_Yes"] = 1
+            if "HasCoSigner_Yes" in model.feature_names_in_:
+                data["HasCoSigner_Yes"] = 1
 
         input_df = pd.DataFrame([data])
         input_df = input_df.reindex(columns=model.feature_names_in_, fill_value=0)
 
-        # Model prediction
-        probability = model.predict_proba(input_df)[0][1]
+        try:
+            probability = model.predict_proba(input_df)[0][1]
+        except Exception as e:
+            st.error(f"❌ Prediction failed: {e}")
+            st.stop()
 
         # Risk bands
         if probability < 0.20:
@@ -153,17 +148,14 @@ with tab1:
 
         st.divider()
 
-        # Result display
         getattr(st, color)(
             f"{risk_label}\n\n"
             f"Default Probability: {probability:.2%}\n"
             f"Decision Threshold: {THRESHOLD}"
         )
 
-        # Probability bar
         st.progress(probability)
 
-        # Applicant summary
         st.subheader("Applicant Summary")
         col1, col2, col3 = st.columns(3)
         col1.metric("Credit Score", credit_score)
@@ -174,31 +166,31 @@ with tab1:
 # TAB 2: MODEL INSIGHTS
 # =========================
 with tab2:
-
     st.subheader("Top Feature Importances")
 
-    importances = model.feature_importances_
-    features = model.feature_names_in_
+    try:
+        importances = model.feature_importances_
+        features = model.feature_names_in_
 
-    imp_df = pd.DataFrame({
-        "Feature": features,
-        "Importance": importances
-    }).sort_values(by="Importance", ascending=False).head(10)
+        imp_df = pd.DataFrame({
+            "Feature": features,
+            "Importance": importances
+        }).sort_values(by="Importance", ascending=False).head(10)
 
-    st.bar_chart(imp_df.set_index("Feature"))
+        st.bar_chart(imp_df.set_index("Feature"))
+    except Exception as e:
+        st.error(f"❌ Could not load feature importances: {e}")
 
     st.info("""
-    The chart above shows the most influential features
-    used by the Gradient Boosting model to assess loan default risk.
+        The chart above shows the most influential features
+        used by the Gradient Boosting model to assess loan default risk.
     """)
 
 # =========================
 # TAB 3: ABOUT PROJECT
 # =========================
 with tab3:
-
     st.subheader("Project Overview")
-
     st.markdown("""
     **Model:** Gradient Boosting Classifier  
     **Dataset:** Loan default dataset (Imbalanced)  
@@ -210,5 +202,4 @@ with tab3:
     To predict the probability of loan default and assist
     financial institutions in making risk-aware lending decisions.
     """)
-
     st.success("Developed as an end-to-end Machine Learning deployment project 🚀")
