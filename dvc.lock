@@ -1,0 +1,46 @@
+schema: '2.0'
+stages:
+  ingest:
+    cmd: python src/data_ingestion.py
+    deps:
+    - path: data/raw/Loan_default.csv
+      hash: md5
+      md5: 5f5a3364753b86ef3472cba30af224ce
+      size: 24834870
+    - path: src/data_ingestion.py
+      hash: md5
+      md5: 8459f950b8060a20c4b5b1fd5ca4df81
+      size: 1001
+    outs:
+    - path: data/processed/loan_default.csv
+      hash: md5
+      md5: 5d5ab10d35d78fa61123f0df450afaf5
+      size: 25090218
+  train:
+    cmd: python src/train.py
+    deps:
+    - path: data/processed/loan_default.csv
+      hash: md5
+      md5: 5d5ab10d35d78fa61123f0df450afaf5
+      size: 25090218
+    - path: src/preprocessing.py
+      hash: md5
+      md5: 0fb2bb0ed972c119fbaa68f76b31925e
+      size: 1937
+    - path: src/train.py
+      hash: md5
+      md5: 4063fdf15a3f8dfee757a1e40135814f
+      size: 4612
+    params:
+      params.yaml:
+        model:
+          name: GradientBoostingClassifier
+          random_state: 42
+        training:
+          test_size: 0.2
+          threshold: 0.15
+    outs:
+    - path: models/loan_default_pipeline.pkl
+      hash: md5
+      md5: 613543d079158e444ae23b61cb110ac8
+      size: 147652

@@ -1,0 +1,21 @@
+stages:
+
+  ingest:
+    cmd: python src/data_ingestion.py
+    deps:
+      - src/data_ingestion.py
+      - data/raw/Loan_default.csv
+    outs:
+      - data/processed/loan_default.csv
+
+  train:
+    cmd: python src/train.py
+    deps:
+      - src/train.py
+      - src/preprocessing.py
+      - data/processed/loan_default.csv
+    params:
+      - model
+      - training
+    outs:
+      - models/loan_default_pipeline.pkl
