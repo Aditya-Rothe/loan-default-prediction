@@ -3,26 +3,27 @@ from fastapi.testclient import TestClient
 from src.api import app
 
 
-client = TestClient(app)
-
-
 def test_root():
 
-    response = client.get("/")
+    with TestClient(app) as client:
 
-    assert response.status_code == 200
+        response = client.get("/")
+
+        assert response.status_code == 200
 
 
 def test_health():
 
-    response = client.get("/health")
+    with TestClient(app) as client:
 
-    assert response.status_code == 200
+        response = client.get("/health")
 
-    data = response.json()
+        assert response.status_code == 200
 
-    assert data["status"] == "healthy"
-    assert data["model_loaded"] is True
+        data = response.json()
+
+        assert data["status"] == "healthy"
+        assert data["model_loaded"] is True
 
 
 def test_prediction():
@@ -46,19 +47,21 @@ def test_prediction():
         "HasCoSigner": "Yes",
     }
 
-    response = client.post(
-        "/predict",
-        json=payload,
-    )
+    with TestClient(app) as client:
 
-    assert response.status_code == 200
+        response = client.post(
+            "/predict",
+            json=payload,
+        )
 
-    data = response.json()
+        assert response.status_code == 200
 
-    assert "default_probability" in data
-    assert "prediction" in data
-    assert "risk_level" in data
-    assert "threshold" in data
+        data = response.json()
 
-    assert 0 <= data["default_probability"] <= 1
-    assert data["prediction"] in [0, 1]
+        assert "default_probability" in data
+        assert "prediction" in data
+        assert "risk_level" in data
+        assert "threshold" in data
+
+        assert 0 <= data["default_probability"] <= 1
+        assert data["prediction"] in [0, 1]

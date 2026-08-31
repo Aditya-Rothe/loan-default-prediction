@@ -1,4 +1,6 @@
+
 import os
+from contextlib import asynccontextmanager
 
 import joblib
 import pandas as pd
@@ -11,10 +13,48 @@ MODEL_PATH = "models/loan_default_pipeline.pkl"
 THRESHOLD = 0.20
 
 
+# --------------------------------------------------
+# Model Loading
+# --------------------------------------------------
+
+model = None
+
+
+def load_model():
+
+    if not os.path.exists(MODEL_PATH):
+        raise FileNotFoundError(
+            f"Model not found at: {MODEL_PATH}"
+        )
+
+    return joblib.load(MODEL_PATH)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+
+    global model
+
+    model = load_model()
+
+    print("Model loaded successfully.")
+
+    yield
+
+    model = None
+
+    print("Model unloaded.")
+
+
+# --------------------------------------------------
+# FastAPI Application
+# --------------------------------------------------
+
 app = FastAPI(
     title="Loan Default Prediction API",
     description="API for predicting loan default risk.",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 
@@ -41,23 +81,6 @@ class LoanApplication(BaseModel):
     HasDependents: str
     LoanPurpose: str
     HasCoSigner: str
-
-
-# --------------------------------------------------
-# Load Model
-# --------------------------------------------------
-
-def load_model():
-
-    if not os.path.exists(MODEL_PATH):
-        raise FileNotFoundError(
-            f"Model not found at: {MODEL_PATH}"
-        )
-
-    return joblib.load(MODEL_PATH)
-
-
-model = load_model()
 
 
 # --------------------------------------------------
@@ -88,29 +111,37 @@ def health():
 @app.post("/predict")
 def predict(application: LoanApplication):
 
+    if model is None:
+
+        raise HTTPException(
+            status_code=503,
+            detail="Model is not loaded.",
+        )
+
     try:
 
-        # Convert request to DataFrame
         input_data = pd.DataFrame(
             [application.model_dump()]
         )
 
-        # Predict probability
         probability = model.predict_proba(
             input_data
         )[0][1]
 
-        # Apply business threshold
         prediction = int(
             probability >= THRESHOLD
         )
 
-        # Risk classification
         if probability >= 0.50:
+
             risk_level = "Very High Risk"
+
         elif probability >= THRESHOLD:
+
             risk_level = "High Risk"
+
         else:
+
             risk_level = "Low Risk"
 
         return {
@@ -129,3 +160,4 @@ def predict(application: LoanApplication):
             status_code=500,
             detail=str(e),
         )
+
