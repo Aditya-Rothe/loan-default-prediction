@@ -38,7 +38,7 @@ stages:
           random_state: 42
         training:
           test_size: 0.2
-          threshold: 0.15
+          threshold: 0.2
     outs:
     - path: models/loan_default_pipeline.pkl
       hash: md5
