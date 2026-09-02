@@ -1,107 +1,668 @@
-# Loan Default Prediction | Machine Learning Project
+# 🏦 Loan Default Prediction – End-to-End MLOps Project
 
-### Overview
-Loan default prediction is a critical problem in the banking and financial sector.
-This project focuses on building a machine learning–based classification system to predict whether a loan applicant is likely to default on a loan based on their financial, personal, and loan-related attributes.
+An end-to-end Machine Learning and MLOps project for predicting the probability of loan default. The project implements a complete machine learning lifecycle, from data ingestion and validation to model training, experiment tracking, data versioning, API deployment, containerization, automated testing, and Continuous Integration.
 
-The project follows a complete end-to-end data science workflow, including data preprocessing, exploratory data analysis (EDA), feature engineering, model training, evaluation, and comparison of multiple ML algorithms.
+---
 
-### Objective
+## 📌 Business Problem
 
-- The main objectives of this project are:
-- To analyze customer loan data and identify key risk factors
--  To build and evaluate multiple machine learning models for loan default prediction
-- To compare models using appropriate metrics for imbalanced datasets
-- To gain practical experience with real-world financial data
+Financial institutions need to identify customers who are likely to default on their loans.
 
-### Dataset Description
+Incorrectly approving a high-risk loan can result in financial losses. Therefore, the objective of this project is to build a machine learning system that predicts the probability of loan default and helps identify potentially risky loan applications.
 
-- Source: Kaggle (Loan Default Dataset)
-- Records: ~255,000 loan applications
-- Features: 18 input variables + 1 target variable
+The project uses a **Gradient Boosting Classifier** to predict whether a customer is likely to default on a loan.
 
-Target Variable:
+---
+
+# 🎯 Project Objectives
+
+The main objectives of this project are:
+
+* Build a machine learning model for loan default prediction.
+* Create a reproducible machine learning pipeline.
+* Track experiments using MLflow.
+* Version datasets and pipeline artifacts using DVC.
+* Store DVC artifacts remotely using DAGsHub.
+* Expose predictions through a FastAPI REST API.
+* Containerize the application using Docker.
+* Write automated API tests using Pytest.
+* Automate testing using GitHub Actions CI.
+
+---
+
+# 🏗️ Project Architecture
+
+```text
+                    ┌─────────────────────┐
+                    │   Raw Loan Dataset  │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │   Data Ingestion    │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │   Data Validation   │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │   Preprocessing     │
+                    │ Scaling + Encoding  │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │ Model Training      │
+                    │ Gradient Boosting   │
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────┴──────────┐
+                    ▼                     ▼
+             ┌─────────────┐       ┌─────────────┐
+             │   MLflow    │       │ Model File  │
+             │ Experiments │       │   .pkl      │
+             └─────────────┘       └──────┬──────┘
+                                          │
+                                          ▼
+                                  ┌─────────────┐
+                                  │   FastAPI   │
+                                  └──────┬──────┘
+                                         │
+                                         ▼
+                                  ┌─────────────┐
+                                  │   Docker    │
+                                  └──────┬──────┘
+                                         │
+                                         ▼
+                                  ┌─────────────┐
+                                  │ Deployment  │
+                                  └─────────────┘
+
+
+        DVC + DAGsHub → Data & Artifact Versioning
+
+        GitHub Actions → Automated Testing (CI)
+```
+
+---
+
+# 📂 Project Structure
+
+```text
+loan-default-prediction/
+│
+├── data/
+│   ├── raw/
+│   │   ├── Loan_default.csv.dvc
+│   │   └── .gitignore
+│   │
+│   └── processed/
+│
+├── models/
+│   └── loan_default_pipeline.pkl
+│
+├── notebooks/
+│   └── loan_default_prediction.ipynb
+│
+├── src/
+│   ├── __init__.py
+│   ├── api.py
+│   ├── data_ingestion.py
+│   ├── data_validation.py
+│   ├── preprocessing.py
+│   ├── train.py
+│   ├── evaluate.py
+│   └── threshold_analysis.py
+│
+├── tests/
+│   └── test_api.py
+│
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+│
+├── .dvc/
+│   └── config
+│
+├── Dockerfile
+├── .dockerignore
+├── .gitignore
+├── dvc.yaml
+├── dvc.lock
+├── params.yaml
+├── requirements.txt
+└── README.md
+```
+
+---
+
+# 📊 Dataset
+
+The dataset contains information related to loan applicants, including:
+
+### Numerical Features
+
+* Age
+* Income
+* Loan Amount
+* Credit Score
+* Months Employed
+* Number of Credit Lines
+* Interest Rate
+* Loan Term
+* Debt-to-Income Ratio
+
+### Categorical Features
+
+* Education
+* Employment Type
+* Marital Status
+* Has Mortgage
+* Has Dependents
+* Loan Purpose
+* Has Co-Signer
+
+### Target Variable
+
+```text
 Default
-0 → No Default
-1 → Loan Default
+```
 
-### Feature Types
+Where:
 
-Numerical Features:
-Age, Income, LoanAmount, CreditScore, InterestRate, DTIRatio, etc.
+* `0` → Customer did not default.
+* `1` → Customer defaulted.
 
-Categorical Features:
-Education, EmploymentType, MaritalStatus, LoanPurpose, HasMortgage, HasCoSigner, etc.
+The dataset contains approximately:
 
-### Project Workflow
+```text
+255,347 records
+18 columns
+```
 
-The project was executed in the following structured steps:
+---
 
-### 1. Data Understanding & Cleaning
-- Dataset inspection (head, shape, info)
-- Feature type classification (numerical vs categorical)
-- Removal of irrelevant identifiers (LoanID)
+# 🔄 Machine Learning Pipeline
 
-### 2. Exploratory Data Analysis (EDA)
+The project follows a structured machine learning workflow.
 
-- Univariate Analysis: Distribution of numerical features
-- Bivariate Analysis: Relationship between features and loan default
-- Categorical Analysis: Default rate across categories
-- Multivariate Analysis: Correlation heatmap for numerical features
+## 1. Data Ingestion
 
-### 3. Data Preprocessing
+The raw dataset is loaded from:
 
-- Encoding of categorical variables
-- Feature scaling using standardization
-- Train–test split to avoid data leakage
+```text
+data/raw/Loan_default.csv
+```
 
-### 4. Model Building
+The ingestion pipeline saves the processed dataset to:
 
-The following models were implemented and evaluated:
-- Logistic Regression
-- Decision Tree Classifier
-- Random Forest Classifier
-- Gradient Boosting Classifier
+```text
+data/processed/loan_default.csv
+```
 
-### 5. Model Evaluation
+---
 
-Models were evaluated using metrics suitable for imbalanced data, including:
+## 2. Data Validation
 
-- Accuracy
-- Precision
-- Recall
-- F1 Score
-- ROC–AUC Score
-- Confusion Matrix
+The dataset is validated before training.
 
-### Key Insights
+The validation process checks:
 
-The dataset is highly imbalanced, making accuracy alone a misleading metric
-ROC–AUC is more reliable for evaluating model performance
-Income, Credit Score, Interest Rate, and DTI Ratio play a major role in loan default risk
-Ensemble models outperform basic classifiers
+* Required columns.
+* Missing values.
+* Duplicate records.
+* Target variable validity.
 
-### Future Improvements
+This helps detect data problems before they reach the machine learning model.
 
-- Apply resampling techniques (SMOTE, class weighting)
-- Perform hyperparameter tuning (GridSearchCV)
-- Improve recall by adjusting classification thresholds
-- Use advanced models like XGBoost or LightGBM
-- Deploy the model as a web application
+---
 
-### Skills Demonstrated
+## 3. Data Preprocessing
 
-- Data Cleaning & Feature Engineering
-- Exploratory Data Analysis (EDA)
-- Handling Imbalanced Datasets
-- Machine Learning Model Evaluation
-- Python, Pandas, NumPy, Scikit-learn
-- End-to-End ML Project Workflow
+The preprocessing pipeline uses Scikit-learn's `ColumnTransformer`.
 
-  
-# 🏦 Loan Default Risk Assessment System
+### Numerical Features
 
-🚀 **Live Dashboard:**  
-https://loan-default-prediction-4aivfdbdf3d4swmbe5dhh6.streamlit.app/
+Numerical features are transformed using:
 
-📌 **Tech Stack:** Python • Scikit-learn • Streamlit • Gradient Boosting
+```text
+StandardScaler
+```
+
+### Categorical Features
+
+Categorical features are transformed using:
+
+```text
+OneHotEncoder
+```
+
+The preprocessing pipeline is combined with the machine learning model to ensure consistent transformations during training and prediction.
+
+---
+
+# 🤖 Model Training
+
+The project uses:
+
+```text
+GradientBoostingClassifier
+```
+
+The dataset is divided into:
+
+```text
+80% Training Data
+20% Testing Data
+```
+
+The trained pipeline is saved as:
+
+```text
+models/loan_default_pipeline.pkl
+```
+
+---
+
+# 📈 Model Evaluation
+
+The model is evaluated using multiple classification metrics:
+
+* Accuracy
+* Precision
+* Recall
+* F1 Score
+* ROC-AUC
+
+Example results:
+
+| Metric    |  Score |
+| --------- | -----: |
+| Accuracy  | 0.8324 |
+| Precision | 0.3272 |
+| Recall    | 0.4197 |
+| F1 Score  | 0.3677 |
+| ROC-AUC   | 0.7580 |
+
+---
+
+# 🎯 Threshold Optimization
+
+Loan default prediction is an imbalanced classification problem.
+
+Using the default classification threshold of `0.50` resulted in very low recall for detecting loan defaults.
+
+Therefore, multiple thresholds were analyzed.
+
+The final business threshold selected was:
+
+```text
+0.20
+```
+
+This improves the model's ability to identify potentially risky customers.
+
+The decision is based on the business objective of reducing the number of missed loan defaults.
+
+---
+
+# 🧪 MLflow Experiment Tracking
+
+MLflow is used to track machine learning experiments.
+
+The project logs:
+
+### Parameters
+
+* Model name
+* Random state
+* Test size
+* Classification threshold
+
+### Metrics
+
+* Accuracy
+* Precision
+* Recall
+* F1 Score
+* ROC-AUC
+
+MLflow helps compare experiments and maintain reproducibility.
+
+Run MLflow locally using:
+
+```bash
+mlflow ui
+```
+
+Then open:
+
+```text
+http://127.0.0.1:5000
+```
+
+---
+
+# 📦 DVC – Data Version Control
+
+DVC is used for:
+
+* Dataset versioning.
+* Pipeline reproducibility.
+* Model artifact tracking.
+
+The raw dataset is tracked using:
+
+```bash
+dvc add data/raw/Loan_default.csv
+```
+
+The project pipeline is defined in:
+
+```text
+dvc.yaml
+```
+
+The pipeline includes:
+
+```text
+Data Ingestion
+        ↓
+Model Training
+```
+
+The pipeline can be reproduced using:
+
+```bash
+dvc repro
+```
+
+Pipeline status can be checked using:
+
+```bash
+dvc status
+```
+
+---
+
+# ☁️ DAGsHub Integration
+
+DAGsHub is used as remote storage for DVC artifacts.
+
+The DVC remote stores versioned artifacts such as:
+
+* Raw dataset.
+* Processed dataset.
+* Trained model.
+
+Artifacts can be uploaded using:
+
+```bash
+dvc push
+```
+
+Artifacts can be downloaded using:
+
+```bash
+dvc pull
+```
+
+---
+
+# 🚀 FastAPI
+
+The trained model is exposed through a REST API using FastAPI.
+
+## Start the API
+
+```bash
+uvicorn src.api:app --reload
+```
+
+The API runs at:
+
+```text
+http://127.0.0.1:8000
+```
+
+---
+
+## API Endpoints
+
+### Root Endpoint
+
+```text
+GET /
+```
+
+Returns a message confirming that the API is running.
+
+---
+
+### Health Check
+
+```text
+GET /health
+```
+
+Example response:
+
+```json
+{
+  "status": "healthy",
+  "model_loaded": true
+}
+```
+
+---
+
+### Prediction Endpoint
+
+```text
+POST /predict
+```
+
+The API accepts loan applicant information and returns:
+
+* Default probability.
+* Prediction.
+* Risk level.
+* Classification threshold.
+
+Example response:
+
+```json
+{
+  "default_probability": 0.32,
+  "prediction": 1,
+  "risk_level": "High Risk",
+  "threshold": 0.2
+}
+```
+
+---
+
+# 🐳 Docker
+
+The FastAPI application is containerized using Docker.
+
+## Build the Docker Image
+
+```bash
+docker build -t loan-default-api .
+```
+
+## Run the Container
+
+```bash
+docker run -p 8000:8000 loan-default-api
+```
+
+The API will be available at:
+
+```text
+http://localhost:8000
+```
+
+---
+
+# 🧪 Automated Testing
+
+API endpoints are tested using Pytest.
+
+Tests include:
+
+* Root endpoint test.
+* Health endpoint test.
+* Prediction endpoint test.
+
+Run the tests using:
+
+```bash
+python -m pytest
+```
+
+Example output:
+
+```text
+3 passed
+```
+
+---
+
+# ⚙️ GitHub Actions CI
+
+GitHub Actions is used for Continuous Integration.
+
+Whenever code is pushed to the `main` branch:
+
+```text
+Push to GitHub
+        ↓
+GitHub Actions Triggered
+        ↓
+Set Up Python Environment
+        ↓
+Install Dependencies
+        ↓
+Configure DVC
+        ↓
+Pull Versioned Artifacts
+        ↓
+Run Automated Tests
+        ↓
+CI Passed ✅
+```
+
+This ensures that new code changes are automatically tested.
+
+---
+
+# 🛠️ Technologies Used
+
+| Technology     | Purpose                    |
+| -------------- | -------------------------- |
+| Python         | Programming Language       |
+| Pandas         | Data Processing            |
+| Scikit-learn   | Machine Learning           |
+| MLflow         | Experiment Tracking        |
+| DVC            | Data & Pipeline Versioning |
+| DAGsHub        | Remote Storage for DVC     |
+| FastAPI        | REST API                   |
+| Docker         | Containerization           |
+| Pytest         | Automated Testing          |
+| GitHub Actions | Continuous Integration     |
+| Git & GitHub   | Version Control            |
+
+---
+
+# ⚡ Installation
+
+## Clone the Repository
+
+```bash
+git clone https://github.com/Aditya-Rothe/loan-default-prediction.git
+
+cd loan-default-prediction
+```
+
+## Create a Virtual Environment
+
+```bash
+python -m venv .venv
+```
+
+### Windows
+
+```bash
+.venv\Scripts\activate
+```
+
+### Linux / macOS
+
+```bash
+source .venv/bin/activate
+```
+
+## Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+## Pull DVC Artifacts
+
+```bash
+dvc pull
+```
+
+## Run the Pipeline
+
+```bash
+dvc repro
+```
+
+## Run Tests
+
+```bash
+python -m pytest
+```
+
+## Start the API
+
+```bash
+uvicorn src.api:app --reload
+```
+
+---
+
+# 🔮 Future Improvements
+
+Potential future improvements include:
+
+* Hyperparameter optimization.
+* Model monitoring.
+* Data drift detection.
+* Automated model retraining.
+* Cloud deployment.
+* Kubernetes deployment.
+* Model registry integration.
+* Feature store integration.
+* Airflow orchestration.
+
+---
+
+# 👨‍💻 Author
+
+**Aditya Rothe**
+
+Aspiring Data Scientist | Machine Learning Engineer
+
+---
+
+# ⭐ If You Like This Project
+
+If you found this project interesting, consider giving the repository a ⭐.
