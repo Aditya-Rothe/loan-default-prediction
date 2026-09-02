@@ -11,7 +11,7 @@ The project covers the complete ML lifecycle — from data ingestion and preproc
 **Streamlit App:**
 Add your deployed Streamlit Community Cloud URL here.
 
-> Example: `https://your-app-name.streamlit.app`
+> Example: https://loan-default-prediction-4aivfdbdf3d4swmbe5dhh6.streamlit.app/
 
 ---
 
